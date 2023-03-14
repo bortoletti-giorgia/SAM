@@ -1,3 +1,65 @@
+# Run SAM on SLURM-UNIPD
+**(The SAM code will not be updated)**
+
+## Run JoJoGAN in Cluster DEI of University of Padua
+
+If you don’t have at least of 12 GB in your GPU and it’s not RTX 3090 or Tesla V100, you can run the code in [SLURM CLUSTER DEI](https://clusterdeiguide.readthedocs.io/en/latest/index.html).
+
+Requirements to access SLURM:
+* Windows 11
+* An account DEI: ask for it here https://www.dei.unipd.it/helpdesk/index.php
+* At least 20 GB in your workspace
+* WinSCP with PuTTY
+
+Requirements to create the Singularity Container:
+* Ubuntu
+* Singularity
+
+### Create Singularity Container
+
+For running your code in SLURM, you need to create a Singularity Container.
+I created the container in Ubuntu because it requires fewer applications and has fewer conflicts than Windows but Singularity can also be installed on Windows and produces the same results.
+
+Create the container from the Singularity Definition file [singularity-container.def](https://github.com/bortoletti-giorgia/SAM/blob/main/extra/singularity-container.def).
+
+Open Command Prompt and write: ```sudo singularity build singularity-container.sif singularity-container.def```
+
+If you want to modify something you can run: ```singularity shell singularity-container.sif```.
+
+The singularity-container.sif container contains:
+* Ubuntu 18.04
+* CUDA 11.1 with its location saved in the PATH
+* Ninja package
+* Anaconda 2020
+* An environment Anaconda called *sam_env* created from [sam_env.yaml](https://github.com/bortoletti-giorgia/SAM/blob/master/environment/sam_env.yaml) but with installed also ```pip install torch==1.7.1+cu110 torchvision==0.8.2+cu110 torchaudio==0.7.2 -f https://download.pytorch.org/whl/torch_stable.html ```.
+
+### Run on Cluster DEI
+
+Login to Windows 11 and download [main.job](https://github.com/bortoletti-giorgia/SAM/blob/main/extra/run-remote.job). Be careful to rename it as *main.job*. Executing this job file, SAM uses the pretrained model *sam_ffhq_aging.pt* on all the images contained in */SAM/notebooks/images* and saves results in */SAM/results* divided in folders based on target ages.
+
+Open WinSCP and connect to *login.dei.unipd.it* using SCP protocol.
+
+Clone [SAM-github](https://github.com/bortoletti-giorgia/SAM) and follow the section "Pretrained Models".
+
+Your workspace structure should be (“bortoletti” is the example workspace):
+
+```
+    \home\bortoletti
+    ├── SAM                               # clone of https://github.com/bortoletti-giorgia/SAM
+    ├── ├── pretrained_models             # folder created by you with inside *sam_ffhq_aging.pt*
+
+    ├── out                               # folder with TXT file with errors and shell output of main.job 
+    │   main.job                          # JOB file for running SAM 
+    │   singularity-container.sif         # Singularity container for executing the job file
+```
+
+
+Open PuTTY and write: ```sbatch main.job```. 
+At the end you can find in folder:
+* *./out*: one TXT file with a list of errors and one TXT file with output of the job;
+*	*/SAM/results*: images resulted from scripts/inference.py divided in folders based on target ages.
+
+
 # Only a Matter of Style: Age Transformation Using a Style-Based Regression Model (SIGGRAPH 2021)
 
 > The  task of age transformation illustrates the change of an individual's appearance over time. Accurately modeling this complex transformation over an input facial image is extremely challenging as it requires making convincing and possibly large changes to facial features and head shape, while still preserving the input identity. In this work, we present an image-to-image translation method that learns to directly encode real facial images into the latent space of a pre-trained unconditional GAN (e.g., StyleGAN) subject to a given aging shift. We employ a pre-trained age regression network used to explicitly guide the encoder to generate the latent codes corresponding to the desired age. In this formulation, our method approaches the continuous aging process as a regression task between the input age and desired target age, providing fine-grained control on the generated image. Moreover, unlike other approaches that operate solely in the latent space using a prior on the path controlling age, our method learns a more disentangled, non-linear path. We demonstrate that the end-to-end nature of our approach, coupled with the rich semantic latent space of StyleGAN, allows for further editing of the generated images. Qualitative and quantitative evaluations show the advantages of our method compared to state-of-the-art approaches.
